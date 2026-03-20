@@ -1,0 +1,60 @@
+name: LapinBrowser
+
+settings:
+  PRODUCT_BUNDLE_IDENTIFIER: pt.lapin.browser
+  MACOSX_DEPLOYMENT_TARGET: "13.0"
+  SWIFT_VERSION: "5.9"
+  CODE_SIGN_IDENTITY: "-"
+  CODE_SIGN_STYLE: Automatic
+
+targets:
+  LapinBrowser:
+    type: application
+    platform: macOS
+    sources:
+      - path: LapinBrowser
+        includes:
+          - "**/*.swift"
+    resources:
+      - path: LapinBrowser/Resources
+        includes:
+          - Assets.xcassets
+    settings:
+      INFOPLIST_FILE: LapinBrowser/Info.plist
+      CODE_SIGN_ENTITLEMENTS: LapinBrowser/LapinBrowser.entitlements
+      ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+    scheme:
+      configVariants:
+        - Debug
+        - Release
+
+  LapinBrowserTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - path: LapinBrowserTests
+        includes:
+          - "**/*.swift"
+    dependencies:
+      - target: LapinBrowser
+    settings:
+      BUNDLE_LOADER: $(BUILT_PRODUCTS_DIR)/LapinBrowser.app/Contents/MacOS/LapinBrowser
+      TEST_HOST: $(BUNDLE_LOADER)
+
+schemes:
+  LapinBrowser:
+    build:
+      targets:
+        LapinBrowser: all
+    run:
+      config: Debug
+    test:
+      config: Debug
+      targets:
+        - LapinBrowserTests
+    profile:
+      config: Release
+    analyze:
+      config: Debug
+    archive:
+      config: Release
