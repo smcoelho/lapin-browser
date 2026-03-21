@@ -23,6 +23,9 @@ struct GeneralSettingsView: View {
                 Button("Set as Default Browser") {
                     setAsDefaultBrowser()
                 }
+                Button("Edit settings.json") {
+                    NSWorkspace.shared.open(AppSettings.shared.settingsURL)
+                }
             }
 
             if settings.availableProfiles.isEmpty {

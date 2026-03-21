@@ -1,4 +1,51 @@
+import AppKit
 import SwiftUI
+
+/// Embedded inside a TableColumn cell — traverses up via superview to reach NSTableView
+/// and installs a doubleAction. Must be placed inside a table cell to work.
+private struct TableDoubleClickHook: NSViewRepresentable {
+    let action: () -> Void
+
+    func makeNSView(context: Context) -> HookView {
+        HookView(coordinator: context.coordinator)
+    }
+
+    func updateNSView(_ nsView: HookView, context: Context) {
+        context.coordinator.action = action
+    }
+
+    func makeCoordinator() -> Coordinator { Coordinator(action: action) }
+
+    class Coordinator: NSObject {
+        var action: () -> Void
+        init(action: @escaping () -> Void) { self.action = action }
+        @objc func handleDoubleClick() { action() }
+    }
+
+    class HookView: NSView {
+        weak var coordinator: Coordinator?
+
+        init(coordinator: Coordinator) {
+            self.coordinator = coordinator
+            super.init(frame: .zero)
+        }
+        required init?(coder: NSCoder) { fatalError() }
+
+        override func viewDidMoveToSuperview() {
+            super.viewDidMoveToSuperview()
+            // Walk up from the cell view — guaranteed to find NSTableView.
+            var v: NSView? = self
+            while let current = v {
+                if let table = current as? NSTableView {
+                    table.doubleAction = #selector(Coordinator.handleDoubleClick)
+                    table.target = coordinator
+                    return
+                }
+                v = current.superview
+            }
+        }
+    }
+}
 
 struct RulesListView: View {
     @EnvironmentObject var settings: AppSettings
@@ -24,6 +71,7 @@ struct RulesListView: View {
 
                 TableColumn("Pattern") { rule in
                     Text(rule.pattern)
+                        .background(TableDoubleClickHook(action: editSelected))
                 }
 
                 TableColumn("Profile") { rule in

@@ -13,7 +13,7 @@ final class AppSettings: ObservableObject {
     // Runtime-only, refreshed from Chrome on launch
     @Published var availableProfiles: [ChromeProfile] = []
 
-    private let settingsURL: URL
+    let settingsURL: URL
 
     private init() {
         let appSupport: URL
@@ -43,7 +43,9 @@ final class AppSettings: ObservableObject {
     func save() {
         let persisted = PersistedSettings(rules: rules, defaultProfileID: defaultProfileID)
         do {
-            let data = try JSONEncoder().encode(persisted)
+            let encoder = JSONEncoder()
+            encoder.outputFormatting = [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]
+            let data = try encoder.encode(persisted)
             try data.write(to: settingsURL)
         } catch {
             logger.error("Failed to save settings: \(error)")
