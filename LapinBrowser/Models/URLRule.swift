@@ -1,7 +1,7 @@
 import Foundation
 
 struct URLRule: Identifiable, Codable {
-    var id: UUID
+    let id: UUID
     var pattern: String      // glob pattern, e.g. "*.apple.com" or "blip.pt/*"
     var profileID: String    // matches ChromeProfile.id
     var label: String        // user-visible label, may be empty
