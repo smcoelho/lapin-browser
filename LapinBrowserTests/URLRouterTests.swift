@@ -18,15 +18,16 @@ final class URLRouterTests: XCTestCase {
     }
 
     // MARK: - Full URL Pattern Tests
+    // Patterns containing "/" are matched against url.absoluteString (including scheme).
 
     func testFullURLPatternMatches() throws {
-        let rules = [URLRule(pattern: "blip.pt/*", profileID: "Profile 2")]
+        let rules = [URLRule(pattern: "https://blip.pt/*", profileID: "Profile 2")]
         let url = URL(string: "https://blip.pt/articles/123")!
         XCTAssertEqual(URLRouter.matchedProfileID(for: url, rules: rules), "Profile 2")
     }
 
     func testFullURLPatternNoMatch() throws {
-        let rules = [URLRule(pattern: "blip.pt/*", profileID: "Profile 2")]
+        let rules = [URLRule(pattern: "https://blip.pt/*", profileID: "Profile 2")]
         let url = URL(string: "https://example.com/page")!
         XCTAssertNil(URLRouter.matchedProfileID(for: url, rules: rules))
     }
@@ -41,6 +42,15 @@ final class URLRouterTests: XCTestCase {
         XCTAssertNil(URLRouter.matchedProfileID(for: url, rules: rules))
     }
 
+    func testDisabledRuleBeforeEnabledRuleContinuesToNext() throws {
+        let rules = [
+            URLRule(pattern: "*.apple.com", profileID: "Profile 1", isEnabled: false),
+            URLRule(pattern: "*.apple.com", profileID: "Profile 2", isEnabled: true)
+        ]
+        let url = URL(string: "https://developer.apple.com")!
+        XCTAssertEqual(URLRouter.matchedProfileID(for: url, rules: rules), "Profile 2")
+    }
+
     // MARK: - Rule Priority Tests
 
     func testFirstMatchWins() throws {
@@ -52,15 +62,13 @@ final class URLRouterTests: XCTestCase {
         XCTAssertEqual(URLRouter.matchedProfileID(for: url, rules: rules), "Profile 1")
     }
 
-    // MARK: - Empty Rules Tests
+    // MARK: - Empty and No-Match Tests
 
     func testEmptyRulesReturnsNil() throws {
         let rules: [URLRule] = []
         let url = URL(string: "https://developer.apple.com")!
         XCTAssertNil(URLRouter.matchedProfileID(for: url, rules: rules))
     }
-
-    // MARK: - No Match Tests
 
     func testNoMatchReturnsNil() throws {
         let rules = [
