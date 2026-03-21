@@ -26,6 +26,13 @@ final class URLRouterTests: XCTestCase {
         XCTAssertEqual(URLRouter.matchedProfileID(for: url, rules: rules), "Profile 2")
     }
 
+    func testFullURLPatternMatchesRootWithoutTrailingSlash() throws {
+        // OS may send https://www.instagram.com (no trailing slash); pattern https://www.instagram.com/ should still match.
+        let rules = [URLRule(pattern: "https://www.instagram.com/", profileID: "Work")]
+        let url = URL(string: "https://www.instagram.com")!
+        XCTAssertEqual(URLRouter.matchedProfileID(for: url, rules: rules), "Work")
+    }
+
     func testFullURLPatternNoMatch() throws {
         let rules = [URLRule(pattern: "https://blip.pt/*", profileID: "Profile 2")]
         let url = URL(string: "https://example.com/page")!

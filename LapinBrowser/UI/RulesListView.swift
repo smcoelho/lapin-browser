@@ -115,24 +115,36 @@ struct RuleEditView: View {
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: 20) {
             Text("Edit Rule").font(.headline)
 
-            Form {
-                TextField("Pattern", text: $rule.pattern)
-                    .help(Text("Glob pattern, e.g. *.apple.com or blip.pt/*"))
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Pattern").font(.callout).foregroundStyle(.secondary)
+                TextField("", text: $rule.pattern)
+                    .textFieldStyle(.roundedBorder)
+                Text("Use *.apple.com to match by host, or https://example.com/* to match the full URL.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
 
-                TextField("Label", text: $rule.label)
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Label").font(.callout).foregroundStyle(.secondary)
+                TextField("Optional note", text: $rule.label)
+                    .textFieldStyle(.roundedBorder)
+            }
 
-                Picker("Profile", selection: $rule.profileID) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Profile").font(.callout).foregroundStyle(.secondary)
+                Picker("", selection: $rule.profileID) {
                     Text("None").tag("")
                     ForEach(profiles) { profile in
                         Text(profile.displayName).tag(profile.id)
                     }
                 }
-
-                Toggle("Enabled", isOn: $rule.isEnabled)
+                .labelsHidden()
             }
+
+            Toggle("Enabled", isOn: $rule.isEnabled)
 
             HStack {
                 Spacer()
@@ -146,7 +158,7 @@ struct RuleEditView: View {
                 .disabled(rule.pattern.isEmpty)
             }
         }
-        .padding()
-        .frame(width: 380)
+        .padding(24)
+        .frame(width: 480)
     }
 }

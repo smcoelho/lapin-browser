@@ -33,7 +33,12 @@ struct URLRouter {
         for rule in rules where rule.isEnabled {
             let subject: String
             if rule.pattern.contains("/") {
-                subject = url.absoluteString
+                // Normalize: add trailing slash when the URL has no path, so that
+                // "https://www.instagram.com/" matches both https://www.instagram.com
+                // and https://www.instagram.com/ as received from the OS.
+                var str = url.absoluteString
+                if url.path.isEmpty && !str.hasSuffix("/") { str += "/" }
+                subject = str
             } else {
                 subject = url.host ?? ""
             }

@@ -1,3 +1,4 @@
+import CoreServices
 import OSLog
 import SwiftUI
 
@@ -37,18 +38,11 @@ struct GeneralSettingsView: View {
     }
 
     private func setAsDefaultBrowser() {
-        let logger = Logger(subsystem: "pt.lapin.browser", category: "GeneralSettings")
-        NSWorkspace.shared.setDefaultApplication(
-            at: Bundle.main.bundleURL,
-            toOpenURLsWithScheme: "http"
-        ) { error in
-            if let error { logger.error("Failed to set default browser (http): \(error)") }
-        }
-        NSWorkspace.shared.setDefaultApplication(
-            at: Bundle.main.bundleURL,
-            toOpenURLsWithScheme: "https"
-        ) { error in
-            if let error { logger.error("Failed to set default browser (https): \(error)") }
-        }
+        guard let bundleID = Bundle.main.bundleIdentifier else { return }
+        let id = bundleID as CFString
+        // LSSetDefaultHandlerForURLScheme uses the bundle identifier rather than
+        // the file path, so it works regardless of where the app is installed.
+        LSSetDefaultHandlerForURLScheme("http" as CFString, id)
+        LSSetDefaultHandlerForURLScheme("https" as CFString, id)
     }
 }
