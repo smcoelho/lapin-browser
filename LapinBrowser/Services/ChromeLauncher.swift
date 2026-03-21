@@ -27,7 +27,7 @@ struct ChromeLauncher {
     }
 
     private static func openWithWorkspace(_ url: URL, profile: ChromeProfile) {
-        let config = NSWorkspaceOpenConfiguration()
+        let config = NSWorkspace.OpenConfiguration()
         config.arguments = ["--profile-directory=\(profile.directoryName)"]
         NSWorkspace.shared.open([url], withApplicationAt: chromeAppURL, configuration: config) { _, error in
             if let error = error {

@@ -77,21 +77,23 @@ struct RulesListView: View {
             RuleEditView(rule: rule, profiles: settings.availableProfiles) { updated in
                 if let i = settings.rules.firstIndex(where: { $0.id == updated.id }) {
                     settings.rules[i] = updated
-                    settings.save()
+                } else {
+                    settings.rules.append(updated)
+                    selection = updated.id
                 }
+                settings.save()
             }
         }
     }
 
     private func addRule() {
+        // Open the edit sheet with a fresh rule; only append+save if the user clicks Save.
         let newRule = URLRule(
             pattern: "",
             profileID: settings.defaultProfileID,
             label: ""
         )
-        settings.rules.append(newRule)
-        selection = newRule.id
-        settings.save()
+        editingRule = newRule
     }
 
     private func removeSelected() {

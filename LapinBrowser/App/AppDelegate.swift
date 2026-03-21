@@ -3,6 +3,8 @@ import AppKit
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
 
+    func applicationSupportsSecureRestorableState(_ app: NSApplication) -> Bool { true }
+
     func applicationDidFinishLaunching(_ notification: Notification) {
         let profiles = ChromeProfileDetector.detect()
         AppSettings.shared.availableProfiles = profiles
