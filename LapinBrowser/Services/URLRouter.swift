@@ -1,5 +1,4 @@
 import Foundation
-import Darwin
 import OSLog
 
 private let logger = Logger(subsystem: "pt.lapin.browser", category: "URLRouter")
@@ -11,19 +10,26 @@ struct URLRouter {
     @MainActor
     func route(_ url: URL) {
         let settings = AppSettings.shared
-        let profileID = matchedProfileID(for: url, rules: settings.rules)
+        let profileID = URLRouter.matchedProfileID(for: url, rules: settings.rules)
             ?? settings.defaultProfileID
 
-        guard !profileID.isEmpty,
-              let profile = settings.availableProfiles.first(where: { $0.id == profileID }) else {
-            logger.warning("No profile found for profileID '\(profileID)' — skipping \(url.absoluteString)")
+        guard !profileID.isEmpty else {
+            logger.warning("No default profile configured — skipping \(url.absoluteString)")
+            return
+        }
+
+        guard let profile = settings.availableProfiles.first(where: { $0.id == profileID }) else {
+            logger.warning("Profile '\(profileID)' not found in available profiles — skipping \(url.absoluteString)")
             return
         }
 
         ChromeLauncher.open(url, in: profile)
     }
 
-    private func matchedProfileID(for url: URL, rules: [URLRule]) -> String? {
+    // Internal so URLRouterTests can exercise matching logic directly.
+    // Patterns with no `/` are matched against the URL host only.
+    // Patterns with `/` are matched against the full absoluteString (including scheme).
+    static func matchedProfileID(for url: URL, rules: [URLRule]) -> String? {
         for rule in rules where rule.isEnabled {
             let subject: String
             if rule.pattern.contains("/") {
