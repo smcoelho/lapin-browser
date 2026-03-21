@@ -1,3 +1,4 @@
+import OSLog
 import SwiftUI
 
 struct GeneralSettingsView: View {
@@ -12,7 +13,7 @@ struct GeneralSettingsView: View {
                         Text(profile.displayName).tag(profile.id)
                     }
                 }
-                .onChange(of: settings.defaultProfileID) { _ in
+                .onChange(of: settings.defaultProfileID) {
                     settings.save()
                 }
             }
@@ -36,13 +37,18 @@ struct GeneralSettingsView: View {
     }
 
     private func setAsDefaultBrowser() {
+        let logger = Logger(subsystem: "pt.lapin.browser", category: "GeneralSettings")
         NSWorkspace.shared.setDefaultApplication(
             at: Bundle.main.bundleURL,
             toOpenURLsWithScheme: "http"
-        ) { _ in }
+        ) { error in
+            if let error { logger.error("Failed to set default browser (http): \(error)") }
+        }
         NSWorkspace.shared.setDefaultApplication(
             at: Bundle.main.bundleURL,
             toOpenURLsWithScheme: "https"
-        ) { _ in }
+        ) { error in
+            if let error { logger.error("Failed to set default browser (https): \(error)") }
+        }
     }
 }

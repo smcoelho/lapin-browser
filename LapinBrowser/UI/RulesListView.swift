@@ -3,6 +3,7 @@ import SwiftUI
 struct RulesListView: View {
     @EnvironmentObject var settings: AppSettings
     @State private var selection: URLRule.ID? = nil
+    @State private var editingRule: URLRule? = nil
 
     var body: some View {
         VStack(spacing: 0) {
@@ -54,6 +55,15 @@ struct RulesListView: View {
                 .buttonStyle(.borderless)
                 .disabled(selection == nil)
 
+                Divider().frame(height: 22)
+
+                Button(action: editSelected) {
+                    Image(systemName: "pencil")
+                        .frame(width: 26, height: 22)
+                }
+                .buttonStyle(.borderless)
+                .disabled(selection == nil)
+
                 Spacer()
 
                 Text("\(settings.rules.count) rule\(settings.rules.count == 1 ? "" : "s")")
@@ -62,6 +72,14 @@ struct RulesListView: View {
                     .padding(.trailing, 8)
             }
             .padding(.horizontal, 4)
+        }
+        .sheet(item: $editingRule) { rule in
+            RuleEditView(rule: rule, profiles: settings.availableProfiles) { updated in
+                if let i = settings.rules.firstIndex(where: { $0.id == updated.id }) {
+                    settings.rules[i] = updated
+                    settings.save()
+                }
+            }
         }
     }
 
@@ -81,5 +99,52 @@ struct RulesListView: View {
         settings.rules.removeAll { $0.id == selectedID }
         selection = nil
         settings.save()
+    }
+
+    private func editSelected() {
+        editingRule = settings.rules.first(where: { $0.id == selection })
+    }
+}
+
+struct RuleEditView: View {
+    @State var rule: URLRule
+    let profiles: [ChromeProfile]
+    let onSave: (URLRule) -> Void
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("Edit Rule").font(.headline)
+
+            Form {
+                TextField("Pattern", text: $rule.pattern)
+                    .help("Glob pattern, e.g. *.apple.com or blip.pt/*")
+
+                TextField("Label", text: $rule.label)
+
+                Picker("Profile", selection: $rule.profileID) {
+                    Text("None").tag("")
+                    ForEach(profiles) { profile in
+                        Text(profile.displayName).tag(profile.id)
+                    }
+                }
+
+                Toggle("Enabled", isOn: $rule.isEnabled)
+            }
+
+            HStack {
+                Spacer()
+                Button("Cancel") { dismiss() }
+                    .keyboardShortcut(.cancelAction)
+                Button("Save") {
+                    onSave(rule)
+                    dismiss()
+                }
+                .keyboardShortcut(.defaultAction)
+                .disabled(rule.pattern.isEmpty)
+            }
+        }
+        .padding()
+        .frame(width: 380)
     }
 }

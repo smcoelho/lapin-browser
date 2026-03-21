@@ -1,8 +1,6 @@
 import SwiftUI
 
 struct MenuBarView: View {
-    @EnvironmentObject var settings: AppSettings
-
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             Button("Open Settings") {
