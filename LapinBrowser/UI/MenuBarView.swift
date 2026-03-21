@@ -3,9 +3,15 @@ import SwiftUI
 struct MenuBarView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Button("Open Settings") {
-                NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
-                NSApp.activate(ignoringOtherApps: true)
+            if #available(macOS 14.0, *) {
+                SettingsLink {
+                    Text("Open Settings")
+                }
+            } else {
+                Button("Open Settings") {
+                    NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
+                    NSApp.activate(ignoringOtherApps: true)
+                }
             }
             Divider()
             Button("Quit Lapin Browser") {

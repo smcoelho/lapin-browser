@@ -120,7 +120,7 @@ struct RuleEditView: View {
 
             Form {
                 TextField("Pattern", text: $rule.pattern)
-                    .help("Glob pattern, e.g. *.apple.com or blip.pt/*")
+                    .help(Text("Glob pattern, e.g. *.apple.com or blip.pt/*"))
 
                 TextField("Label", text: $rule.label)
 
