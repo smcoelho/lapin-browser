@@ -32,11 +32,15 @@
 				<string>http</string>
 				<string>https</string>
 			</array>
+			<key>CFBundleURLRole</key>
+			<string>Editor</string>
 		</dict>
 	</array>
 	<key>LSUIElement</key>
 	<true/>
 	<key>LSApplicationCategoryType</key>
-	<string>public.app-category.utilities</string>
+	<string>public.app-category.browsers</string>
+	<key>CFBundleIconName</key>
+	<string>AppIcon</string>
 </dict>
 </plist>
