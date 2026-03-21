@@ -5,13 +5,20 @@ import OSLog
 private let logger = Logger(subsystem: "pt.lapin.browser", category: "ChromeLauncher")
 
 struct ChromeLauncher {
-    static let chromeAppURL = URL(fileURLWithPath: "/Applications/Google Chrome.app")
+    private static let fallbackChromeURL = URL(fileURLWithPath: "/Applications/Google Chrome.app")
+
+    private static var chromeAppURL: URL {
+        NSWorkspace.shared.urlForApplication(withBundleIdentifier: "com.google.Chrome")
+            ?? fallbackChromeURL
+    }
 
     static func open(_ url: URL, in profile: ChromeProfile) {
         let chromeRunning = !NSRunningApplication.runningApplications(
             withBundleIdentifier: "com.google.Chrome"
         ).isEmpty
 
+        // NSWorkspace is preferred when Chrome is not running (cold launch with args).
+        // Process is used when Chrome is already running (passes args to the binary directly).
         if chromeRunning {
             openWithProcess(url, profile: profile)
         } else {
@@ -25,7 +32,7 @@ struct ChromeLauncher {
         NSWorkspace.shared.open([url], withApplicationAt: chromeAppURL, configuration: config) { _, error in
             if let error = error {
                 logger.error("NSWorkspace failed to open Chrome: \(error)")
-                // Fallback to Process if NSWorkspace fails
+                // Completion handler runs on a background queue; openWithProcess is safe to call here.
                 openWithProcess(url, profile: profile)
             }
         }
