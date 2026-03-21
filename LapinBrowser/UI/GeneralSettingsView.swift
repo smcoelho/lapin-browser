@@ -13,7 +13,7 @@ struct GeneralSettingsView: View {
                         Text(profile.displayName).tag(profile.id)
                     }
                 }
-                .onChange(of: settings.defaultProfileID) {
+                .onChange(of: settings.defaultProfileID) { _ in
                     settings.save()
                 }
             }
