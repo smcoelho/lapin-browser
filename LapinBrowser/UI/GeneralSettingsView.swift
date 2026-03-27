@@ -8,6 +8,16 @@ struct GeneralSettingsView: View {
     var body: some View {
         Form {
             Section {
+                Picker("Browser", selection: $settings.activeBrowserID) {
+                    ForEach(settings.availableBrowsers) { browser in
+                        Text(browser.name).tag(browser.id)
+                    }
+                }
+                .onChange(of: settings.activeBrowserID) { _ in
+                    settings.save()
+                    refreshProfiles()
+                }
+
                 Picker("Default Profile", selection: $settings.defaultProfileID) {
                     Text("None").tag("")
                     ForEach(settings.availableProfiles) { profile in
@@ -30,7 +40,7 @@ struct GeneralSettingsView: View {
 
             if settings.availableProfiles.isEmpty {
                 Section {
-                    Text("No Chrome profiles found. Make sure Google Chrome is installed.")
+                    Text("No profiles found. Make sure your selected browser is installed.")
                         .foregroundStyle(.secondary)
                         .font(.caption)
                 }
@@ -38,6 +48,16 @@ struct GeneralSettingsView: View {
         }
         .formStyle(.grouped)
         .padding()
+    }
+
+    private func refreshProfiles() {
+        guard let browser = Browser.all.first(where: { $0.id == settings.activeBrowserID }) else { return }
+        let profiles = BrowserProfileDetector.detect(for: browser)
+        settings.availableProfiles = profiles
+        if !profiles.contains(where: { $0.id == settings.defaultProfileID }) {
+            settings.defaultProfileID = profiles.first?.id ?? ""
+            settings.save()
+        }
     }
 
     private func setAsDefaultBrowser() {

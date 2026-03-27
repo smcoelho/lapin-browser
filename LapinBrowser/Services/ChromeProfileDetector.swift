@@ -1,34 +1,32 @@
 import Foundation
 import OSLog
 
-private let logger = Logger(subsystem: "pt.lapin.browser", category: "ChromeProfileDetector")
+private let logger = Logger(subsystem: "pt.lapin.browser", category: "BrowserProfileDetector")
 
-struct ChromeProfileDetector {
-    static let chromeLocalStatePath = "Library/Application Support/Google/Chrome/Local State"
-
-    static func detect() -> [ChromeProfile] {
+struct BrowserProfileDetector {
+    static func detect(for browser: Browser) -> [BrowserProfile] {
         let localStatePath = FileManager.default
             .homeDirectoryForCurrentUser
-            .appendingPathComponent(chromeLocalStatePath)
+            .appendingPathComponent(browser.localStatePath)
 
         guard let data = try? Data(contentsOf: localStatePath) else {
-            logger.warning("Chrome Local State not found at \(localStatePath.path)")
+            logger.warning("Local State not found at \(localStatePath.path)")
             return []
         }
 
         guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
               let profileSection = json["profile"] as? [String: Any],
               let infoCache = profileSection["info_cache"] as? [String: Any] else {
-            logger.error("Failed to parse Chrome Local State JSON structure")
+            logger.error("Failed to parse Local State JSON structure for \(browser.name)")
             return []
         }
 
-        return infoCache.compactMap { (directoryName, value) -> ChromeProfile? in
+        return infoCache.compactMap { (directoryName, value) -> BrowserProfile? in
             guard let info = value as? [String: Any] else { return nil }
             let displayName = info["name"] as? String ?? directoryName
             let email = info["user_name"] as? String ?? ""
             let gaiaName = info["gaia_name"] as? String ?? ""
-            return ChromeProfile(
+            return BrowserProfile(
                 id: directoryName,
                 directoryName: directoryName,
                 displayName: displayName,

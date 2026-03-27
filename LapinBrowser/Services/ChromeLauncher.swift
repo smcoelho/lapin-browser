@@ -2,50 +2,50 @@ import Foundation
 import AppKit
 import OSLog
 
-private let logger = Logger(subsystem: "pt.lapin.browser", category: "ChromeLauncher")
+private let logger = Logger(subsystem: "pt.lapin.browser", category: "BrowserLauncher")
 
-struct ChromeLauncher {
-    private static let fallbackChromeURL = URL(fileURLWithPath: "/Applications/Google Chrome.app")
-
-    private static var chromeAppURL: URL {
-        NSWorkspace.shared.urlForApplication(withBundleIdentifier: "com.google.Chrome")
-            ?? fallbackChromeURL
+struct BrowserLauncher {
+    private static func appURL(for browser: Browser) -> URL {
+        NSWorkspace.shared.urlForApplication(withBundleIdentifier: browser.id)
+            ?? URL(fileURLWithPath: browser.fallbackAppPath)
     }
 
-    static func open(_ url: URL, in profile: ChromeProfile) {
-        let chromeRunning = !NSRunningApplication.runningApplications(
-            withBundleIdentifier: "com.google.Chrome"
+    static func open(_ url: URL, in profile: BrowserProfile, browser: Browser) {
+        let browserRunning = !NSRunningApplication.runningApplications(
+            withBundleIdentifier: browser.id
         ).isEmpty
 
-        // NSWorkspace is preferred when Chrome is not running (cold launch with args).
-        // Process is used when Chrome is already running (passes args to the binary directly).
-        if chromeRunning {
-            openWithProcess(url, profile: profile)
+        // NSWorkspace is preferred when the browser is not running (cold launch with args).
+        // Process is used when the browser is already running (passes args to the binary directly).
+        if browserRunning {
+            openWithProcess(url, profile: profile, browser: browser)
         } else {
-            openWithWorkspace(url, profile: profile)
+            openWithWorkspace(url, profile: profile, browser: browser)
         }
     }
 
-    private static func openWithWorkspace(_ url: URL, profile: ChromeProfile) {
+    private static func openWithWorkspace(_ url: URL, profile: BrowserProfile, browser: Browser) {
+        let browserURL = appURL(for: browser)
         let config = NSWorkspace.OpenConfiguration()
         config.arguments = ["--profile-directory=\(profile.directoryName)"]
-        NSWorkspace.shared.open([url], withApplicationAt: chromeAppURL, configuration: config) { _, error in
+        NSWorkspace.shared.open([url], withApplicationAt: browserURL, configuration: config) { _, error in
             if let error = error {
-                logger.error("NSWorkspace failed to open Chrome: \(error)")
+                logger.error("NSWorkspace failed to open \(browser.name): \(error)")
                 // Completion handler runs on a background queue; openWithProcess is safe to call here.
-                openWithProcess(url, profile: profile)
+                openWithProcess(url, profile: profile, browser: browser)
             }
         }
     }
 
-    private static func openWithProcess(_ url: URL, profile: ChromeProfile) {
+    private static func openWithProcess(_ url: URL, profile: BrowserProfile, browser: Browser) {
+        let browserURL = appURL(for: browser)
         let process = Process()
-        process.executableURL = chromeAppURL.appendingPathComponent("Contents/MacOS/Google Chrome")
+        process.executableURL = browserURL.appendingPathComponent("Contents/MacOS/\(browser.binaryName)")
         process.arguments = ["--profile-directory=\(profile.directoryName)", url.absoluteString]
         do {
             try process.run()
         } catch {
-            logger.error("Process failed to open Chrome: \(error)")
+            logger.error("Process failed to open \(browser.name): \(error)")
         }
     }
 }

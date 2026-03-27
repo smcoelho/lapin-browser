@@ -158,7 +158,7 @@ struct RulesListView: View {
 
 struct RuleEditView: View {
     @State var rule: URLRule
-    let profiles: [ChromeProfile]
+    let profiles: [BrowserProfile]
     let onSave: (URLRule) -> Void
     @Environment(\.dismiss) private var dismiss
 

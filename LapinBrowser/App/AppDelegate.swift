@@ -6,10 +6,25 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationSupportsSecureRestorableState(_ app: NSApplication) -> Bool { true }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        let profiles = ChromeProfileDetector.detect()
+        let installed = Browser.all.filter {
+            NSWorkspace.shared.urlForApplication(withBundleIdentifier: $0.id) != nil
+        }
+        AppSettings.shared.availableBrowsers = installed
+
+        // Fall back if the saved browser was uninstalled
+        if !installed.contains(where: { $0.id == AppSettings.shared.activeBrowserID }),
+           let first = installed.first {
+            AppSettings.shared.activeBrowserID = first.id
+            AppSettings.shared.save()
+        }
+
+        let activeBrowser = Browser.all.first { $0.id == AppSettings.shared.activeBrowserID }
+            ?? installed.first ?? .googleChrome
+        let profiles = BrowserProfileDetector.detect(for: activeBrowser)
         AppSettings.shared.availableProfiles = profiles
         if AppSettings.shared.defaultProfileID.isEmpty, let first = profiles.first {
             AppSettings.shared.defaultProfileID = first.id
+            AppSettings.shared.save()
         }
 
         NotificationCenter.default.addObserver(

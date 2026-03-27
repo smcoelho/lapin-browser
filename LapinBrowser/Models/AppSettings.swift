@@ -9,9 +9,11 @@ final class AppSettings: ObservableObject {
 
     @Published var rules: [URLRule] = []
     @Published var defaultProfileID: String = ""
+    @Published var activeBrowserID: String = Browser.googleChrome.id
 
-    // Runtime-only, refreshed from Chrome on launch
-    @Published var availableProfiles: [ChromeProfile] = []
+    // Runtime-only, refreshed from the active browser on launch
+    @Published var availableProfiles: [BrowserProfile] = []
+    @Published var availableBrowsers: [Browser] = []
 
     let settingsURL: URL
 
@@ -38,10 +40,11 @@ final class AppSettings: ObservableObject {
               let decoded = try? JSONDecoder().decode(PersistedSettings.self, from: data) else { return }
         rules = decoded.rules
         defaultProfileID = decoded.defaultProfileID
+        activeBrowserID = decoded.activeBrowserID
     }
 
     func save() {
-        let persisted = PersistedSettings(rules: rules, defaultProfileID: defaultProfileID)
+        let persisted = PersistedSettings(rules: rules, defaultProfileID: defaultProfileID, activeBrowserID: activeBrowserID)
         do {
             let encoder = JSONEncoder()
             encoder.outputFormatting = [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]
@@ -55,5 +58,6 @@ final class AppSettings: ObservableObject {
     private struct PersistedSettings: Codable {
         var rules: [URLRule]
         var defaultProfileID: String
+        var activeBrowserID: String = Browser.googleChrome.id
     }
 }

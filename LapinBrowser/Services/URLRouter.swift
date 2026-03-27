@@ -23,7 +23,8 @@ struct URLRouter {
             return
         }
 
-        ChromeLauncher.open(url, in: profile)
+        let activeBrowser = Browser.all.first { $0.id == settings.activeBrowserID } ?? .googleChrome
+        BrowserLauncher.open(url, in: profile, browser: activeBrowser)
     }
 
     // Internal so URLRouterTests can exercise matching logic directly.
