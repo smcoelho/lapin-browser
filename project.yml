@@ -3,7 +3,7 @@ name: LapinBrowser
 settings:
   PRODUCT_BUNDLE_IDENTIFIER: pt.lapin.browser
   MACOSX_DEPLOYMENT_TARGET: "13.0"
-  SWIFT_VERSION: "5.9"
+  SWIFT_VERSION: "6.0"
   CODE_SIGN_IDENTITY: "-"
   CODE_SIGN_STYLE: Manual
 
