@@ -1,4 +1,5 @@
 import AppKit
+import ServiceManagement
 
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
@@ -24,6 +25,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         AppSettings.shared.availableProfiles = profiles
         if AppSettings.shared.defaultProfileID.isEmpty, let first = profiles.first {
             AppSettings.shared.defaultProfileID = first.id
+            AppSettings.shared.save()
+        }
+
+        // System state is authoritative — snap persisted preference to match
+        // (handles the case where the user toggled via System Settings externally)
+        let systemRegistered = LoginItemService.isRegistered
+        if AppSettings.shared.launchAtLogin != systemRegistered {
+            AppSettings.shared.launchAtLogin = systemRegistered
             AppSettings.shared.save()
         }
 

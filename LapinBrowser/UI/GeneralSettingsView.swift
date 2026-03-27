@@ -1,5 +1,6 @@
 import CoreServices
 import OSLog
+import ServiceManagement
 import SwiftUI
 
 struct GeneralSettingsView: View {
@@ -30,6 +31,13 @@ struct GeneralSettingsView: View {
             }
 
             Section {
+                Toggle("Launch at Login", isOn: Binding(
+                    get: { settings.launchAtLogin },
+                    set: { applyLaunchAtLogin($0) }
+                ))
+            }
+
+            Section {
                 Button("Set as Default Browser") {
                     setAsDefaultBrowser()
                 }
@@ -48,6 +56,28 @@ struct GeneralSettingsView: View {
         }
         .formStyle(.grouped)
         .padding()
+    }
+
+    private func applyLaunchAtLogin(_ enable: Bool) {
+        if enable {
+            LoginItemService.enable { success, error in
+                if success {
+                    settings.launchAtLogin = true
+                    settings.save()
+                } else {
+                    settings.launchAtLogin = false
+                    if let nsError = error as? NSError,
+                       nsError.code == kSMErrorLaunchDeniedByUser {
+                        SMAppService.openSystemSettingsLoginItems()
+                    }
+                }
+            }
+        } else {
+            LoginItemService.disable { success, _ in
+                settings.launchAtLogin = success ? false : settings.launchAtLogin
+                settings.save()
+            }
+        }
     }
 
     private func refreshProfiles() {
