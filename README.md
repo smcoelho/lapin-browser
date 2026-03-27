@@ -40,3 +40,7 @@ xcodebuild build -project LapinBrowser.xcodeproj -scheme LapinBrowser -destinati
 When macOS routes a URL to Lapin, `AppDelegate.application(_:open:)` passes it to `URLRouter`, which walks the enabled rules in order and uses POSIX `fnmatch` to test each pattern. The matched profile (or the configured default) is passed to `ChromeLauncher`, which spawns Chrome with `--profile-directory`.
 
 Settings are persisted to `~/Library/Application Support/pt.lapin.browser/settings.json`. Available Chrome profiles are detected on each launch from `~/Library/Application Support/Google/Chrome/Local State`.
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md). Licensed under the [MIT License](LICENSE).
