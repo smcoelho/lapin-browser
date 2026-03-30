@@ -49,6 +49,20 @@ Lapin Browser is a macOS menu bar app (no Dock icon via `LSUIElement`) that regi
 
 `rules: [URLRule]`, `defaultProfileID: String`, and `activeBrowserID: String` are persisted. `availableProfiles: [BrowserProfile]` and `availableBrowsers: [Browser]` are always re-detected on launch. `activeBrowserID` defaults to `"com.google.Chrome"` when absent (backward-compatible with existing settings files).
 
+## Release
+
+To publish a new version, run locally:
+
+```bash
+./scripts/bump-version.sh 1.1
+```
+
+This bumps `Info.plist`, commits, tags `v1.1`, and pushes. GitHub Actions (`.github/workflows/release.yml`) picks up the tag and handles the build, signing, GitHub release creation, and Homebrew tap update automatically.
+
+**One-time setup required**: Add a `TAP_TOKEN` secret to this repo (GitHub PAT with `Contents: Read and write` on `smcoelho/homebrew-tap`) so the workflow can push to the tap.
+
+`scripts/release.sh` remains as a manual fallback if CI is unavailable.
+
 ## Deployment target & constraints
 
 - macOS 13.0 minimum
