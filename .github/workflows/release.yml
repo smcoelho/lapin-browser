@@ -63,7 +63,7 @@ jobs:
           VERSION="${GITHUB_REF_NAME#v}"
           SHA256=$(shasum -a 256 "build/LapinBrowser-${VERSION}.zip" | awk '{print $1}')
 
-          git config --global url."https://smcoelho:${TAP_TOKEN}@github.com/".insteadOf "https://github.com/"
+          git config --global url."https://x-access-token:${TAP_TOKEN}@github.com/".insteadOf "https://github.com/"
 
           git clone https://github.com/smcoelho/homebrew-tap.git /tmp/homebrew-tap
 
