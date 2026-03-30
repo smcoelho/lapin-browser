@@ -93,4 +93,51 @@ final class URLRouterTests: XCTestCase {
         let url = URL(string: "https://developer.apple.com")!
         XCTAssertEqual(URLRouter.matchedProfileID(for: url, rules: rules), "Profile 1")
     }
+
+    // MARK: - www./ftp. Prefix Stripping Tests
+
+    func testHostPatternMatchesWWWPrefix() throws {
+        let rules = [URLRule(pattern: "apple.com", profileID: "Profile 1")]
+        let url = URL(string: "https://www.apple.com/news")!
+        XCTAssertEqual(URLRouter.matchedProfileID(for: url, rules: rules), "Profile 1")
+    }
+
+    func testHostPatternMatchesFTPPrefix() throws {
+        let rules = [URLRule(pattern: "apple.com", profileID: "Profile 1")]
+        let url = URL(string: "https://ftp.apple.com/files")!
+        XCTAssertEqual(URLRouter.matchedProfileID(for: url, rules: rules), "Profile 1")
+    }
+
+    func testExplicitWWWPatternStillMatchesWWWURL() throws {
+        // Original subject tried first — backward compatibility.
+        let rules = [URLRule(pattern: "www.apple.com", profileID: "Profile 1")]
+        let url = URL(string: "https://www.apple.com")!
+        XCTAssertEqual(URLRouter.matchedProfileID(for: url, rules: rules), "Profile 1")
+    }
+
+    func testExplicitWWWPatternDoesNotMatchBareURL() throws {
+        // Stripping is one-directional: bare URL never gains a www. prefix.
+        let rules = [URLRule(pattern: "www.apple.com", profileID: "Profile 1")]
+        let url = URL(string: "https://apple.com")!
+        XCTAssertNil(URLRouter.matchedProfileID(for: url, rules: rules))
+    }
+
+    func testFullURLPatternMatchesWWWPrefix() throws {
+        let rules = [URLRule(pattern: "https://apple.com/*", profileID: "Profile 1")]
+        let url = URL(string: "https://www.apple.com/news")!
+        XCTAssertEqual(URLRouter.matchedProfileID(for: url, rules: rules), "Profile 1")
+    }
+
+    func testFullURLPatternMatchesFTPPrefix() throws {
+        let rules = [URLRule(pattern: "https://apple.com/*", profileID: "Profile 1")]
+        let url = URL(string: "https://ftp.apple.com/files")!
+        XCTAssertEqual(URLRouter.matchedProfileID(for: url, rules: rules), "Profile 1")
+    }
+
+    func testFullURLExplicitWWWPatternStillMatches() throws {
+        // Existing pattern — must not regress.
+        let rules = [URLRule(pattern: "https://www.instagram.com/", profileID: "Work")]
+        let url = URL(string: "https://www.instagram.com")!
+        XCTAssertEqual(URLRouter.matchedProfileID(for: url, rules: rules), "Work")
+    }
 }
