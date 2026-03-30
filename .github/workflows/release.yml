@@ -60,6 +60,7 @@ jobs:
         env:
           TAP_TOKEN: ${{ secrets.TAP_TOKEN }}
         run: |
+          echo "TAP_TOKEN length: ${#TAP_TOKEN}"
           VERSION="${GITHUB_REF_NAME#v}"
           SHA256=$(shasum -a 256 "build/LapinBrowser-${VERSION}.zip" | awk '{print $1}')
 
