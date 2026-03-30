@@ -53,8 +53,25 @@ struct URLRouter {
                fnmatch(rule.pattern, stripped, FNM_CASEFOLD) == 0 {
                 return rule.profileID
             }
+            // Also try with http normalized to https, so https:// rules catch http:// URLs.
+            if let httpsSubject = httpToHttpsSubject(subject, isFullURL: isFullURL) {
+                if fnmatch(rule.pattern, httpsSubject, FNM_CASEFOLD) == 0 {
+                    return rule.profileID
+                }
+                if let stripped = strippedSubject(httpsSubject, isFullURL: isFullURL),
+                   fnmatch(rule.pattern, stripped, FNM_CASEFOLD) == 0 {
+                    return rule.profileID
+                }
+            }
         }
         return nil
+    }
+
+    /// Returns a copy of `subject` with the scheme changed from `http` to `https`,
+    /// or `nil` when the subject does not start with `http://`.
+    private static func httpToHttpsSubject(_ subject: String, isFullURL: Bool) -> String? {
+        guard isFullURL, subject.lowercased().hasPrefix("http://") else { return nil }
+        return "https://" + subject.dropFirst("http://".count)
     }
 
     /// Strips a leading `www.` or `ftp.` from the host portion of `subject`,

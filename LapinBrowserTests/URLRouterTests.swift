@@ -21,8 +21,8 @@ final class URLRouterTests: XCTestCase {
     // Patterns containing "/" are matched against url.absoluteString (including scheme).
 
     func testFullURLPatternMatches() throws {
-        let rules = [URLRule(pattern: "https://blip.pt/*", profileID: "Profile 2")]
-        let url = URL(string: "https://blip.pt/articles/123")!
+        let rules = [URLRule(pattern: "https://apple.com/*", profileID: "Profile 2")]
+        let url = URL(string: "https://apple.com/articles/123")!
         XCTAssertEqual(URLRouter.matchedProfileID(for: url, rules: rules), "Profile 2")
     }
 
@@ -34,8 +34,8 @@ final class URLRouterTests: XCTestCase {
     }
 
     func testFullURLPatternNoMatch() throws {
-        let rules = [URLRule(pattern: "https://blip.pt/*", profileID: "Profile 2")]
-        let url = URL(string: "https://example.com/page")!
+        let rules = [URLRule(pattern: "https://apple.com/*", profileID: "Profile 2")]
+        let url = URL(string: "https://google.com/page")!
         XCTAssertNil(URLRouter.matchedProfileID(for: url, rules: rules))
     }
 
@@ -139,5 +139,43 @@ final class URLRouterTests: XCTestCase {
         let rules = [URLRule(pattern: "https://www.instagram.com/", profileID: "Work")]
         let url = URL(string: "https://www.instagram.com")!
         XCTAssertEqual(URLRouter.matchedProfileID(for: url, rules: rules), "Work")
+    }
+
+    // MARK: - HTTP→HTTPS Scheme Normalization Tests
+
+    func testHTTPURLMatchesHTTPSRule() throws {
+        // http:// URL should be caught by an https:// rule.
+        let rules = [URLRule(pattern: "https://apple.com/*", profileID: "Profile 1")]
+        let url = URL(string: "http://apple.com/news")!
+        XCTAssertEqual(URLRouter.matchedProfileID(for: url, rules: rules), "Profile 1")
+    }
+
+    func testHTTPURLWithWWWMatchesHTTPSRule() throws {
+        // http://www. URL should match after both scheme normalization and www-stripping.
+        let rules = [URLRule(pattern: "https://apple.com/*", profileID: "Profile 1")]
+        let url = URL(string: "http://www.apple.com/news")!
+        XCTAssertEqual(URLRouter.matchedProfileID(for: url, rules: rules), "Profile 1")
+    }
+
+    func testHTTPSURLStillMatchesHTTPSRule() throws {
+        // Existing https:// rules must not regress.
+        let rules = [URLRule(pattern: "https://apple.com/*", profileID: "Profile 1")]
+        let url = URL(string: "https://apple.com/news")!
+        XCTAssertEqual(URLRouter.matchedProfileID(for: url, rules: rules), "Profile 1")
+    }
+
+    func testHTTPURLDoesNotMatchUnrelatedHTTPSRule() throws {
+        let rules = [URLRule(pattern: "https://apple.com/*", profileID: "Profile 1")]
+        let url = URL(string: "http://google.com/search")!
+        XCTAssertNil(URLRouter.matchedProfileID(for: url, rules: rules))
+    }
+
+    func testExplicitHTTPRuleOnlyMatchesHTTP() throws {
+        // An http:// rule should match http but not https.
+        let rules = [URLRule(pattern: "http://apple.com/*", profileID: "Profile 1")]
+        let httpURL = URL(string: "http://apple.com/news")!
+        let httpsURL = URL(string: "https://apple.com/news")!
+        XCTAssertEqual(URLRouter.matchedProfileID(for: httpURL, rules: rules), "Profile 1")
+        XCTAssertNil(URLRouter.matchedProfileID(for: httpsURL, rules: rules))
     }
 }
