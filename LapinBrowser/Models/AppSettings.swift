@@ -13,7 +13,7 @@ final class AppSettings: ObservableObject {
     @Published var launchAtLogin: Bool = false
     @Published var enableICloudSync: Bool = false
 
-    // Runtime-only, refreshed from the active browser on launch
+    // Runtime-only, refreshed from all installed browsers on launch
     @Published var availableProfiles: [BrowserProfile] = []
     @Published var availableBrowsers: [Browser] = []
 
