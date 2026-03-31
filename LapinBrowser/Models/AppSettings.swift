@@ -81,7 +81,13 @@ final class AppSettings: ObservableObject {
 
     func save() {
         let enrichedRules = rules.map { rule -> URLRule in
-            guard let profile = availableProfiles.first(where: { $0.id == rule.profileID }) else { return rule }
+            let profile: BrowserProfile?
+            if let bid = rule.browserID {
+                profile = availableProfiles.first { $0.id == rule.profileID && $0.browserID == bid }
+            } else {
+                profile = availableProfiles.first { $0.id == rule.profileID }
+            }
+            guard let profile else { return rule }
             return rule.enriched(with: profile)
         }
         let persisted = PersistedSettings(
@@ -117,8 +123,14 @@ final class AppSettings: ObservableObject {
     func resolveProfileIDs() {
         let before = rules
         rules = rules.map { rule in
-            guard !availableProfiles.contains(where: { $0.id == rule.profileID }) else { return rule }
-            guard let match = availableProfiles.first(where: { profile in
+            let candidateProfiles: [BrowserProfile]
+            if let bid = rule.browserID {
+                candidateProfiles = availableProfiles.filter { $0.browserID == bid }
+            } else {
+                candidateProfiles = availableProfiles
+            }
+            guard !candidateProfiles.contains(where: { $0.id == rule.profileID }) else { return rule }
+            guard let match = candidateProfiles.first(where: { profile in
                 (rule.profileEmail != nil       && profile.email == rule.profileEmail) ||
                 (rule.profileGaiaName != nil    && profile.gaiaName == rule.profileGaiaName) ||
                 (rule.profileDisplayName != nil && profile.displayName == rule.profileDisplayName)
