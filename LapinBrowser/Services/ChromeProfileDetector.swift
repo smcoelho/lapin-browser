@@ -31,7 +31,8 @@ struct BrowserProfileDetector {
                 directoryName: directoryName,
                 displayName: displayName,
                 email: email,
-                gaiaName: gaiaName
+                gaiaName: gaiaName,
+                browserID: browser.id
             )
         }
         .sorted { $0.directoryName < $1.directoryName }

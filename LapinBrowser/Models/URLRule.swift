@@ -10,13 +10,15 @@ struct URLRule: Identifiable, Codable, Equatable {
     var profileEmail: String?
     var profileDisplayName: String?
     var profileGaiaName: String?
+    var browserID: String?   // bundle ID of browser to open URLs in (e.g. "com.google.Chrome")
 
-    init(pattern: String = "", profileID: String = "", label: String = "", isEnabled: Bool = true) {
+    init(pattern: String = "", profileID: String = "", label: String = "", isEnabled: Bool = true, browserID: String? = nil) {
         self.id = UUID()
         self.pattern = pattern
         self.profileID = profileID
         self.label = label
         self.isEnabled = isEnabled
+        self.browserID = browserID
     }
 
     func enriched(with profile: BrowserProfile) -> URLRule {
