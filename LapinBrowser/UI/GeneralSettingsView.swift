@@ -6,6 +6,10 @@ import SwiftUI
 struct GeneralSettingsView: View {
     @EnvironmentObject var settings: AppSettings
 
+    private var activeProfiles: [BrowserProfile] {
+        settings.availableProfiles.filter { $0.browserID == settings.activeBrowserID }
+    }
+
     var body: some View {
         Form {
             Section {
@@ -21,7 +25,7 @@ struct GeneralSettingsView: View {
 
                 Picker("Default Profile", selection: $settings.defaultProfileID) {
                     Text("None").tag("")
-                    ForEach(settings.availableProfiles.filter { $0.browserID == settings.activeBrowserID }) { profile in
+                    ForEach(activeProfiles) { profile in
                         Text(profile.displayName).tag(profile.id)
                     }
                 }
@@ -50,7 +54,7 @@ struct GeneralSettingsView: View {
                 }
             }
 
-            if settings.availableProfiles.filter({ $0.browserID == settings.activeBrowserID }).isEmpty {
+            if activeProfiles.isEmpty {
                 Section {
                     Text("No profiles found. Make sure your selected browser is installed.")
                         .foregroundStyle(.secondary)
@@ -87,9 +91,12 @@ struct GeneralSettingsView: View {
     private func refreshProfiles() {
         let allProfiles = settings.availableBrowsers.flatMap { BrowserProfileDetector.detect(for: $0) }
         settings.availableProfiles = allProfiles
-        let activeProfiles = allProfiles.filter { $0.browserID == settings.activeBrowserID }
-        if !activeProfiles.contains(where: { $0.id == settings.defaultProfileID }) {
-            settings.defaultProfileID = activeProfiles.first?.id ?? ""
+        let newActiveProfiles = allProfiles.filter { $0.browserID == settings.activeBrowserID }
+        // Only reset defaultProfileID when the active browser has profiles but the current default
+        // doesn't belong to it — avoid clearing it when the browser has no detectable profiles yet.
+        if !newActiveProfiles.isEmpty,
+           !newActiveProfiles.contains(where: { $0.id == settings.defaultProfileID }) {
+            settings.defaultProfileID = newActiveProfiles.first?.id ?? ""
             settings.save()
         }
     }
