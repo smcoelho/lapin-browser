@@ -27,8 +27,14 @@ struct URLRouter {
         // Resolve profile — scope to the pinned browser if the rule has one
         let profile: BrowserProfile?
         if let bid = matched?.browserID {
-            profile = settings.availableProfiles.first { $0.id == profileID && $0.browserID == bid }
-                ?? settings.availableProfiles.first { $0.browserID == bid }
+            if let exact = settings.availableProfiles.first(where: { $0.id == profileID && $0.browserID == bid }) {
+                profile = exact
+            } else {
+                profile = settings.availableProfiles.first { $0.browserID == bid }
+                if profile != nil {
+                    logger.warning("Profile '\(profileID)' not found for browser '\(bid)' — falling back to first available profile")
+                }
+            }
         } else {
             profile = settings.availableProfiles.first { $0.id == profileID }
         }
@@ -50,7 +56,7 @@ struct URLRouter {
         matchedRule(for: url, rules: rules)?.profileID
     }
 
-    // New method — same matching logic, returns full rule.
+    // Returns the first matching enabled rule, or nil.
     static func matchedRule(for url: URL, rules: [URLRule]) -> URLRule? {
         for rule in rules where rule.isEnabled {
             let isFullURL = rule.pattern.contains("/")
