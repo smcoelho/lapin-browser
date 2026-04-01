@@ -75,9 +75,15 @@ struct RulesListView: View {
                 }
 
                 TableColumn("Profile") { rule in
-                    let profileName = settings.availableProfiles
-                        .first(where: { $0.id == rule.profileID })?.displayName ?? rule.profileID
-                    Text(profileName)
+                    let profile = rule.browserID.flatMap { bid in
+                        settings.availableProfiles.first { $0.id == rule.profileID && $0.browserID == bid }
+                    } ?? settings.availableProfiles.first { $0.id == rule.profileID }
+
+                    let browserName = rule.browserID.flatMap { bid in
+                        settings.availableBrowsers.first { $0.id == bid }?.name
+                    }
+                    let profileLabel = profile?.displayName ?? rule.profileID
+                    Text(browserName.map { "\($0) — \(profileLabel)" } ?? profileLabel)
                 }
 
                 TableColumn("Label") { rule in
@@ -122,7 +128,9 @@ struct RulesListView: View {
             .padding(.horizontal, 4)
         }
         .sheet(item: $editingRule) { rule in
-            RuleEditView(rule: rule, profiles: settings.availableProfiles) { updated in
+            RuleEditView(rule: rule, profiles: settings.availableProfiles,
+                         browsers: settings.availableBrowsers,
+                         activeBrowserID: settings.activeBrowserID) { updated in
                 if let i = settings.rules.firstIndex(where: { $0.id == updated.id }) {
                     settings.rules[i] = updated
                 } else {
@@ -159,8 +167,18 @@ struct RulesListView: View {
 struct RuleEditView: View {
     @State var rule: URLRule
     let profiles: [BrowserProfile]
+    let browsers: [Browser]
+    let activeBrowserID: String
     let onSave: (URLRule) -> Void
     @Environment(\.dismiss) private var dismiss
+
+    private var effectiveBrowserID: String {
+        rule.browserID ?? activeBrowserID
+    }
+
+    private var filteredProfiles: [BrowserProfile] {
+        profiles.filter { $0.browserID == effectiveBrowserID }
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
@@ -182,10 +200,32 @@ struct RuleEditView: View {
             }
 
             VStack(alignment: .leading, spacing: 4) {
+                Text("Browser").font(.callout).foregroundStyle(.secondary)
+                Picker("", selection: Binding(
+                    get: { rule.browserID ?? "" },
+                    set: { newValue in
+                        let newBrowserID = newValue.isEmpty ? nil : newValue
+                        rule.browserID = newBrowserID
+                        // Reset profileID if it doesn't belong to the new browser
+                        let targetBrowserID = newBrowserID ?? activeBrowserID
+                        if !profiles.filter({ $0.browserID == targetBrowserID }).contains(where: { $0.id == rule.profileID }) {
+                            rule.profileID = ""
+                        }
+                    }
+                )) {
+                    Text("Default (global)").tag("")
+                    ForEach(browsers) { browser in
+                        Text(browser.name).tag(browser.id)
+                    }
+                }
+                .labelsHidden()
+            }
+
+            VStack(alignment: .leading, spacing: 4) {
                 Text("Profile").font(.callout).foregroundStyle(.secondary)
                 Picker("", selection: $rule.profileID) {
                     Text("None").tag("")
-                    ForEach(profiles) { profile in
+                    ForEach(filteredProfiles) { profile in
                         Text(profile.displayName).tag(profile.id)
                     }
                 }

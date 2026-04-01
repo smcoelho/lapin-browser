@@ -21,7 +21,7 @@ struct GeneralSettingsView: View {
 
                 Picker("Default Profile", selection: $settings.defaultProfileID) {
                     Text("None").tag("")
-                    ForEach(settings.availableProfiles) { profile in
+                    ForEach(settings.availableProfiles.filter { $0.browserID == settings.activeBrowserID }) { profile in
                         Text(profile.displayName).tag(profile.id)
                     }
                 }
@@ -50,7 +50,7 @@ struct GeneralSettingsView: View {
                 }
             }
 
-            if settings.availableProfiles.isEmpty {
+            if settings.availableProfiles.filter({ $0.browserID == settings.activeBrowserID }).isEmpty {
                 Section {
                     Text("No profiles found. Make sure your selected browser is installed.")
                         .foregroundStyle(.secondary)
@@ -85,11 +85,11 @@ struct GeneralSettingsView: View {
     }
 
     private func refreshProfiles() {
-        guard let browser = Browser.all.first(where: { $0.id == settings.activeBrowserID }) else { return }
-        let profiles = BrowserProfileDetector.detect(for: browser)
-        settings.availableProfiles = profiles
-        if !profiles.contains(where: { $0.id == settings.defaultProfileID }) {
-            settings.defaultProfileID = profiles.first?.id ?? ""
+        let allProfiles = settings.availableBrowsers.flatMap { BrowserProfileDetector.detect(for: $0) }
+        settings.availableProfiles = allProfiles
+        let activeProfiles = allProfiles.filter { $0.browserID == settings.activeBrowserID }
+        if !activeProfiles.contains(where: { $0.id == settings.defaultProfileID }) {
+            settings.defaultProfileID = activeProfiles.first?.id ?? ""
             settings.save()
         }
     }
