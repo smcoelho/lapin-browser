@@ -35,10 +35,6 @@ struct GeneralSettingsView: View {
                     get: { settings.launchAtLogin },
                     set: { applyLaunchAtLogin($0) }
                 ))
-                Toggle("Sync with iCloud", isOn: Binding(
-                    get: { settings.enableICloudSync },
-                    set: { settings.enableICloudSync = $0; settings.save() }
-                ))
             }
 
             Section {

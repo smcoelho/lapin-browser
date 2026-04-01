@@ -23,7 +23,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             ?? installed.first ?? .googleChrome
         let profiles = BrowserProfileDetector.detect(for: activeBrowser)
         AppSettings.shared.availableProfiles = profiles
-        AppSettings.shared.resolveProfileIDs()
         if AppSettings.shared.defaultProfileID.isEmpty, let first = profiles.first {
             AppSettings.shared.defaultProfileID = first.id
             AppSettings.shared.save()
