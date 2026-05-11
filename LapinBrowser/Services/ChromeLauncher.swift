@@ -30,37 +30,18 @@ struct BrowserLauncher {
     }
 
     private static func openWithoutProfile(_ url: URL, browser: Browser) {
+        // Always use NSWorkspace so the browser receives the URL via its standard open
+        // handler — this opens a new tab rather than a new window (e.g. Safari).
+        // Process is not used here because --profile-directory is not needed and
+        // spawning the binary directly bypasses the tab-reuse mechanism.
         let browserURL = appURL(for: browser)
-        let browserRunning = !NSRunningApplication.runningApplications(
-            withBundleIdentifier: browser.id
-        ).isEmpty
-
-        if browserRunning {
-            let process = Process()
-            process.executableURL = browserURL.appendingPathComponent("Contents/MacOS/\(browser.binaryName)")
-            process.arguments = [url.absoluteString]
-            do {
-                try process.run()
-            } catch {
-                logger.error("Process failed to open \(browser.name): \(error)")
-            }
-        } else {
-            NSWorkspace.shared.open(
-                [url],
-                withApplicationAt: browserURL,
-                configuration: NSWorkspace.OpenConfiguration()
-            ) { _, error in
-                if let error = error {
-                    logger.error("NSWorkspace failed to open \(browser.name): \(error)")
-                    let process = Process()
-                    process.executableURL = browserURL.appendingPathComponent("Contents/MacOS/\(browser.binaryName)")
-                    process.arguments = [url.absoluteString]
-                    do {
-                        try process.run()
-                    } catch {
-                        logger.error("Process fallback failed to open \(browser.name): \(error)")
-                    }
-                }
+        NSWorkspace.shared.open(
+            [url],
+            withApplicationAt: browserURL,
+            configuration: NSWorkspace.OpenConfiguration()
+        ) { _, error in
+            if let error = error {
+                logger.error("NSWorkspace failed to open \(browser.name): \(error)")
             }
         }
     }
