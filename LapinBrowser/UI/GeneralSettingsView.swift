@@ -6,6 +6,10 @@ import SwiftUI
 struct GeneralSettingsView: View {
     @EnvironmentObject var settings: AppSettings
 
+    private var activeBrowser: Browser? {
+        settings.availableBrowsers.first { $0.id == settings.activeBrowserID }
+    }
+
     private var activeProfiles: [BrowserProfile] {
         settings.availableProfiles.filter { $0.browserID == settings.activeBrowserID }
     }
@@ -23,14 +27,16 @@ struct GeneralSettingsView: View {
                     refreshProfiles()
                 }
 
-                Picker("Default Profile", selection: $settings.defaultProfileID) {
-                    Text("None").tag("")
-                    ForEach(activeProfiles) { profile in
-                        Text(profile.displayName).tag(profile.id)
+                if activeBrowser?.supportsProfiles != false {
+                    Picker("Default Profile", selection: $settings.defaultProfileID) {
+                        Text("None").tag("")
+                        ForEach(activeProfiles) { profile in
+                            Text(profile.displayName).tag(profile.id)
+                        }
                     }
-                }
-                .onChange(of: settings.defaultProfileID) { _ in
-                    settings.save()
+                    .onChange(of: settings.defaultProfileID) { _ in
+                        settings.save()
+                    }
                 }
             }
 
