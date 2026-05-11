@@ -12,7 +12,7 @@ final class AppSettings: ObservableObject {
     @Published var activeBrowserID: String = Browser.googleChrome.id
     @Published var launchAtLogin: Bool = false
 
-    // Runtime-only, refreshed from the active browser on launch
+    // Runtime-only, refreshed from all installed browsers on launch
     @Published var availableProfiles: [BrowserProfile] = []
     @Published var availableBrowsers: [Browser] = []
 
@@ -46,7 +46,22 @@ final class AppSettings: ObservableObject {
     }
 
     func save() {
-        let persisted = PersistedSettings(rules: rules, defaultProfileID: defaultProfileID, activeBrowserID: activeBrowserID, launchAtLogin: launchAtLogin)
+        let enrichedRules = rules.map { rule -> URLRule in
+            let profile: BrowserProfile?
+            if let bid = rule.browserID {
+                profile = availableProfiles.first { $0.id == rule.profileID && $0.browserID == bid }
+            } else {
+                profile = availableProfiles.first { $0.id == rule.profileID }
+            }
+            guard let profile else { return rule }
+            return rule.enriched(with: profile)
+        }
+        let persisted = PersistedSettings(
+            rules: enrichedRules,
+            defaultProfileID: defaultProfileID,
+            activeBrowserID: activeBrowserID,
+            launchAtLogin: launchAtLogin
+        )
         do {
             let encoder = JSONEncoder()
             encoder.outputFormatting = [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]
@@ -55,6 +70,28 @@ final class AppSettings: ObservableObject {
         } catch {
             logger.error("Failed to save settings: \(error)")
         }
+    }
+
+    func resolveProfileIDs() {
+        let before = rules
+        rules = rules.map { rule in
+            let candidateProfiles: [BrowserProfile]
+            if let bid = rule.browserID {
+                candidateProfiles = availableProfiles.filter { $0.browserID == bid }
+            } else {
+                candidateProfiles = availableProfiles
+            }
+            guard !candidateProfiles.contains(where: { $0.id == rule.profileID }) else { return rule }
+            guard let match = candidateProfiles.first(where: { profile in
+                (rule.profileEmail != nil       && profile.email == rule.profileEmail) ||
+                (rule.profileGaiaName != nil    && profile.gaiaName == rule.profileGaiaName) ||
+                (rule.profileDisplayName != nil && profile.displayName == rule.profileDisplayName)
+            }) else { return rule }
+            var updated = rule
+            updated.profileID = match.id
+            return updated
+        }
+        if rules != before { save() }
     }
 
     private struct PersistedSettings: Codable {

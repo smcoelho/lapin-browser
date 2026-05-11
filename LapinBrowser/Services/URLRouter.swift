@@ -10,21 +10,41 @@ struct URLRouter {
     @MainActor
     func route(_ url: URL) {
         let settings = AppSettings.shared
-        let profileID = URLRouter.matchedProfileID(for: url, rules: settings.rules)
-            ?? settings.defaultProfileID
+        let matched = URLRouter.matchedRule(for: url, rules: settings.rules)
+        let profileID = matched?.profileID ?? settings.defaultProfileID
 
         guard !profileID.isEmpty else {
             logger.warning("No default profile configured — skipping \(url.absoluteString)")
             return
         }
 
-        guard let profile = settings.availableProfiles.first(where: { $0.id == profileID }) else {
-            logger.warning("Profile '\(profileID)' not found in available profiles — skipping \(url.absoluteString)")
+        // Resolve browser: rule's browserID > global active browser
+        let browserID = matched?.browserID ?? settings.activeBrowserID
+        let browser = Browser.all.first { $0.id == browserID }
+            ?? Browser.all.first { $0.id == settings.activeBrowserID }
+            ?? .googleChrome
+
+        // Resolve profile — scope to the pinned browser if the rule has one
+        let profile: BrowserProfile?
+        if let bid = matched?.browserID {
+            if let exact = settings.availableProfiles.first(where: { $0.id == profileID && $0.browserID == bid }) {
+                profile = exact
+            } else {
+                profile = settings.availableProfiles.first { $0.browserID == bid }
+                if profile != nil {
+                    logger.warning("Profile '\(profileID)' not found for browser '\(bid)' — falling back to first available profile")
+                }
+            }
+        } else {
+            profile = settings.availableProfiles.first { $0.id == profileID }
+        }
+
+        guard let profile else {
+            logger.warning("Profile '\(profileID)' not found for browser '\(browserID)' — skipping \(url.absoluteString)")
             return
         }
 
-        let activeBrowser = Browser.all.first { $0.id == settings.activeBrowserID } ?? .googleChrome
-        BrowserLauncher.open(url, in: profile, browser: activeBrowser)
+        BrowserLauncher.open(url, in: profile, browser: browser)
     }
 
     // Internal so URLRouterTests can exercise matching logic directly.
@@ -33,6 +53,11 @@ struct URLRouter {
     // Leading `www.` and `ftp.` prefixes in the URL are ignored when no direct match is found,
     // so a pattern like `apple.com` also matches `https://www.apple.com`.
     static func matchedProfileID(for url: URL, rules: [URLRule]) -> String? {
+        matchedRule(for: url, rules: rules)?.profileID
+    }
+
+    // Returns the first matching enabled rule, or nil.
+    static func matchedRule(for url: URL, rules: [URLRule]) -> URLRule? {
         for rule in rules where rule.isEnabled {
             let isFullURL = rule.pattern.contains("/")
             let subject: String
@@ -47,20 +72,20 @@ struct URLRouter {
                 subject = url.host ?? ""
             }
             if fnmatch(rule.pattern, subject, FNM_CASEFOLD) == 0 {
-                return rule.profileID
+                return rule
             }
             if let stripped = strippedSubject(subject, isFullURL: isFullURL),
                fnmatch(rule.pattern, stripped, FNM_CASEFOLD) == 0 {
-                return rule.profileID
+                return rule
             }
             // Also try with http normalized to https, so https:// rules catch http:// URLs.
             if let httpsSubject = httpToHttpsSubject(subject, isFullURL: isFullURL) {
                 if fnmatch(rule.pattern, httpsSubject, FNM_CASEFOLD) == 0 {
-                    return rule.profileID
+                    return rule
                 }
                 if let stripped = strippedSubject(httpsSubject, isFullURL: isFullURL),
                    fnmatch(rule.pattern, stripped, FNM_CASEFOLD) == 0 {
-                    return rule.profileID
+                    return rule
                 }
             }
         }

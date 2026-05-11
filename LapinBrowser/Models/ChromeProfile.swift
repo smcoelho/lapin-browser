@@ -6,4 +6,5 @@ struct BrowserProfile: Identifiable, Codable, Hashable {
     let displayName: String    // user-visible name
     let email: String          // account email, may be empty
     let gaiaName: String       // account display name, may be empty
+    let browserID: String      // bundle ID of browser that owns this profile (e.g. "com.google.Chrome")
 }

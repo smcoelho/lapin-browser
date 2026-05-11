@@ -178,4 +178,19 @@ final class URLRouterTests: XCTestCase {
         XCTAssertEqual(URLRouter.matchedProfileID(for: httpURL, rules: rules), "Profile 1")
         XCTAssertNil(URLRouter.matchedProfileID(for: httpsURL, rules: rules))
     }
+
+    // MARK: - Browser Model Tests
+
+    func testSafariSupportsProfilesIsFalse() {
+        XCTAssertFalse(Browser.safari.supportsProfiles)
+    }
+
+    func testChromiumBrowsersSupportsProfilesIsTrue() {
+        XCTAssertTrue(Browser.googleChrome.supportsProfiles)
+        XCTAssertTrue(Browser.brave.supportsProfiles)
+    }
+
+    func testSafariIsInBrowserAll() {
+        XCTAssertTrue(Browser.all.contains { $0.id == "com.apple.Safari" })
+    }
 }

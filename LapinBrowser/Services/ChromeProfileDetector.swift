@@ -5,6 +5,17 @@ private let logger = Logger(subsystem: "pt.lapin.browser", category: "BrowserPro
 
 struct BrowserProfileDetector {
     static func detect(for browser: Browser) -> [BrowserProfile] {
+        guard browser.supportsProfiles else {
+            return [BrowserProfile(
+                id: "default",
+                directoryName: "default",
+                displayName: "Default",
+                email: "",
+                gaiaName: "",
+                browserID: browser.id
+            )]
+        }
+
         let localStatePath = FileManager.default
             .homeDirectoryForCurrentUser
             .appendingPathComponent(browser.localStatePath)
@@ -31,7 +42,8 @@ struct BrowserProfileDetector {
                 directoryName: directoryName,
                 displayName: displayName,
                 email: email,
-                gaiaName: gaiaName
+                gaiaName: gaiaName,
+                browserID: browser.id
             )
         }
         .sorted { $0.directoryName < $1.directoryName }

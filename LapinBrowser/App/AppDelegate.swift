@@ -19,11 +19,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             AppSettings.shared.save()
         }
 
-        let activeBrowser = Browser.all.first { $0.id == AppSettings.shared.activeBrowserID }
-            ?? installed.first ?? .googleChrome
-        let profiles = BrowserProfileDetector.detect(for: activeBrowser)
-        AppSettings.shared.availableProfiles = profiles
-        if AppSettings.shared.defaultProfileID.isEmpty, let first = profiles.first {
+        let allProfiles = installed.flatMap { BrowserProfileDetector.detect(for: $0) }
+        AppSettings.shared.availableProfiles = allProfiles
+        AppSettings.shared.resolveProfileIDs()
+        // Default profile fallback: scope to active browser only
+        let activeProfiles = allProfiles.filter { $0.browserID == AppSettings.shared.activeBrowserID }
+        if AppSettings.shared.defaultProfileID.isEmpty, let first = activeProfiles.first {
             AppSettings.shared.defaultProfileID = first.id
             AppSettings.shared.save()
         }
