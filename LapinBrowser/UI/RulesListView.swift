@@ -176,6 +176,10 @@ struct RuleEditView: View {
         rule.browserID ?? activeBrowserID
     }
 
+    private var effectiveBrowser: Browser? {
+        browsers.first { $0.id == effectiveBrowserID }
+    }
+
     private var filteredProfiles: [BrowserProfile] {
         profiles.filter { $0.browserID == effectiveBrowserID }
     }
@@ -206,9 +210,11 @@ struct RuleEditView: View {
                     set: { newValue in
                         let newBrowserID = newValue.isEmpty ? nil : newValue
                         rule.browserID = newBrowserID
-                        // Reset profileID if it doesn't belong to the new browser
                         let targetBrowserID = newBrowserID ?? activeBrowserID
-                        if !profiles.filter({ $0.browserID == targetBrowserID }).contains(where: { $0.id == rule.profileID }) {
+                        let targetBrowser = browsers.first { $0.id == targetBrowserID }
+                        if targetBrowser?.supportsProfiles == false {
+                            rule.profileID = "default"
+                        } else if !profiles.filter({ $0.browserID == targetBrowserID }).contains(where: { $0.id == rule.profileID }) {
                             rule.profileID = ""
                         }
                     }
@@ -221,15 +227,17 @@ struct RuleEditView: View {
                 .labelsHidden()
             }
 
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Profile").font(.callout).foregroundStyle(.secondary)
-                Picker("", selection: $rule.profileID) {
-                    Text("None").tag("")
-                    ForEach(filteredProfiles) { profile in
-                        Text(profile.displayName).tag(profile.id)
+            if effectiveBrowser?.supportsProfiles != false {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Profile").font(.callout).foregroundStyle(.secondary)
+                    Picker("", selection: $rule.profileID) {
+                        Text("None").tag("")
+                        ForEach(filteredProfiles) { profile in
+                            Text(profile.displayName).tag(profile.id)
+                        }
                     }
+                    .labelsHidden()
                 }
-                .labelsHidden()
             }
 
             Toggle("Enabled", isOn: $rule.isEnabled)
