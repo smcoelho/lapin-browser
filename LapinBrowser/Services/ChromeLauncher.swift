@@ -11,6 +11,11 @@ struct BrowserLauncher {
     }
 
     static func open(_ url: URL, in profile: BrowserProfile, browser: Browser) {
+        guard browser.supportsProfiles else {
+            openWithoutProfile(url, browser: browser)
+            return
+        }
+
         let browserRunning = !NSRunningApplication.runningApplications(
             withBundleIdentifier: browser.id
         ).isEmpty
@@ -21,6 +26,42 @@ struct BrowserLauncher {
             openWithProcess(url, profile: profile, browser: browser)
         } else {
             openWithWorkspace(url, profile: profile, browser: browser)
+        }
+    }
+
+    private static func openWithoutProfile(_ url: URL, browser: Browser) {
+        let browserURL = appURL(for: browser)
+        let browserRunning = !NSRunningApplication.runningApplications(
+            withBundleIdentifier: browser.id
+        ).isEmpty
+
+        if browserRunning {
+            let process = Process()
+            process.executableURL = browserURL.appendingPathComponent("Contents/MacOS/\(browser.binaryName)")
+            process.arguments = [url.absoluteString]
+            do {
+                try process.run()
+            } catch {
+                logger.error("Process failed to open \(browser.name): \(error)")
+            }
+        } else {
+            NSWorkspace.shared.open(
+                [url],
+                withApplicationAt: browserURL,
+                configuration: NSWorkspace.OpenConfiguration()
+            ) { _, error in
+                if let error = error {
+                    logger.error("NSWorkspace failed to open \(browser.name): \(error)")
+                    let process = Process()
+                    process.executableURL = browserURL.appendingPathComponent("Contents/MacOS/\(browser.binaryName)")
+                    process.arguments = [url.absoluteString]
+                    do {
+                        try process.run()
+                    } catch {
+                        logger.error("Process fallback failed to open \(browser.name): \(error)")
+                    }
+                }
+            }
         }
     }
 
