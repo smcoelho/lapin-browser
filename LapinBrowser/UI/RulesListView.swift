@@ -231,7 +231,7 @@ struct RuleEditView: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Profile").font(.callout).foregroundStyle(.secondary)
                     Picker("", selection: $rule.profileID) {
-                        Text("None").tag("")
+                        Text("Default profile").tag("")
                         ForEach(filteredProfiles) { profile in
                             Text(profile.displayName).tag(profile.id)
                         }

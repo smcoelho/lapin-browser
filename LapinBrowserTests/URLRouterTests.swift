@@ -179,6 +179,67 @@ final class URLRouterTests: XCTestCase {
         XCTAssertNil(URLRouter.matchedProfileID(for: httpsURL, rules: rules))
     }
 
+    // MARK: - Route Target Resolution Tests
+
+    private let chromeProfiles = [
+        BrowserProfile(id: "Default", directoryName: "Default", displayName: "Personal",
+                       email: "", gaiaName: "", browserID: Browser.googleChrome.id),
+        BrowserProfile(id: "Profile 1", directoryName: "Profile 1", displayName: "Work",
+                       email: "", gaiaName: "", browserID: Browser.googleChrome.id),
+    ]
+
+    func testRuleWithEmptyProfileUsesDefaultProfile() throws {
+        // A rule saved with Profile = "None" must not swallow the URL.
+        let rules = [URLRule(pattern: "*.apple.com", profileID: "")]
+        let target = URLRouter.resolveTarget(
+            for: URL(string: "https://developer.apple.com")!,
+            rules: rules,
+            defaultProfileID: "Profile 1",
+            activeBrowserID: Browser.googleChrome.id,
+            profiles: chromeProfiles
+        )
+        XCTAssertEqual(target.browser, .googleChrome)
+        XCTAssertEqual(target.profile?.id, "Profile 1")
+    }
+
+    func testNoDefaultProfileStillOpensInActiveBrowser() throws {
+        // Fresh install: Chrome never launched, so no profiles and no default.
+        let target = URLRouter.resolveTarget(
+            for: URL(string: "https://example.com")!,
+            rules: [],
+            defaultProfileID: "",
+            activeBrowserID: Browser.googleChrome.id,
+            profiles: []
+        )
+        XCTAssertEqual(target.browser, .googleChrome)
+        XCTAssertNil(target.profile)
+    }
+
+    func testMissingProfileStillOpensInActiveBrowser() throws {
+        // Default profile was deleted from Chrome since it was configured.
+        let target = URLRouter.resolveTarget(
+            for: URL(string: "https://example.com")!,
+            rules: [],
+            defaultProfileID: "Profile 9",
+            activeBrowserID: Browser.googleChrome.id,
+            profiles: chromeProfiles
+        )
+        XCTAssertEqual(target.browser, .googleChrome)
+        XCTAssertNil(target.profile)
+    }
+
+    func testMatchedRuleProfileIsUsed() throws {
+        let rules = [URLRule(pattern: "*.apple.com", profileID: "Default")]
+        let target = URLRouter.resolveTarget(
+            for: URL(string: "https://developer.apple.com")!,
+            rules: rules,
+            defaultProfileID: "Profile 1",
+            activeBrowserID: Browser.googleChrome.id,
+            profiles: chromeProfiles
+        )
+        XCTAssertEqual(target.profile?.id, "Default")
+    }
+
     // MARK: - Browser Model Tests
 
     func testSafariSupportsProfilesIsFalse() {
