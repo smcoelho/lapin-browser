@@ -12,6 +12,9 @@ struct SettingsView: View {
             GeneralSettingsView()
                 .environmentObject(settings)
                 .tabItem { Label("General", systemImage: "gear") }
+
+            AboutView()
+                .tabItem { Label("About", systemImage: "info.circle") }
         }
         .frame(width: 560, height: 400)
     }
