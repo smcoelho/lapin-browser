@@ -36,9 +36,29 @@ final class AppSettings: ObservableObject {
         load()
     }
 
+    /// Reads settings from `url`. A file that exists but can't be decoded is moved aside
+    /// (to `settings.json.unreadable-<timestamp>`) so the next `save()` doesn't destroy it.
+    nonisolated static func readPersisted(at url: URL) -> PersistedSettings? {
+        guard let data = try? Data(contentsOf: url) else { return nil }
+        do {
+            return try JSONDecoder().decode(PersistedSettings.self, from: data)
+        } catch {
+            logger.error("Failed to decode settings: \(error)")
+            let stamp = Int(Date().timeIntervalSince1970)
+            let backup = url.deletingLastPathComponent()
+                .appendingPathComponent("\(url.lastPathComponent).unreadable-\(stamp)")
+            do {
+                try FileManager.default.moveItem(at: url, to: backup)
+                logger.error("Moved unreadable settings to \(backup.path)")
+            } catch {
+                logger.error("Failed to move unreadable settings aside: \(error)")
+            }
+            return nil
+        }
+    }
+
     private func load() {
-        guard let data = try? Data(contentsOf: settingsURL),
-              let decoded = try? JSONDecoder().decode(PersistedSettings.self, from: data) else { return }
+        guard let decoded = AppSettings.readPersisted(at: settingsURL) else { return }
         rules = decoded.rules
         defaultProfileID = decoded.defaultProfileID
         activeBrowserID = decoded.activeBrowserID
@@ -94,10 +114,27 @@ final class AppSettings: ObservableObject {
         if rules != before { save() }
     }
 
-    private struct PersistedSettings: Codable {
+    struct PersistedSettings: Codable {
         var rules: [URLRule]
         var defaultProfileID: String
-        var activeBrowserID: String = Browser.googleChrome.id
-        var launchAtLogin: Bool = false
+        var activeBrowserID: String
+        var launchAtLogin: Bool
+
+        init(rules: [URLRule], defaultProfileID: String, activeBrowserID: String, launchAtLogin: Bool) {
+            self.rules = rules
+            self.defaultProfileID = defaultProfileID
+            self.activeBrowserID = activeBrowserID
+            self.launchAtLogin = launchAtLogin
+        }
+
+        // Synthesized Decodable ignores property defaults, so keys added after v1.0
+        // must be decoded with decodeIfPresent to keep older settings files readable.
+        init(from decoder: Decoder) throws {
+            let c = try decoder.container(keyedBy: CodingKeys.self)
+            rules = try c.decodeIfPresent([URLRule].self, forKey: .rules) ?? []
+            defaultProfileID = try c.decodeIfPresent(String.self, forKey: .defaultProfileID) ?? ""
+            activeBrowserID = try c.decodeIfPresent(String.self, forKey: .activeBrowserID) ?? Browser.googleChrome.id
+            launchAtLogin = try c.decodeIfPresent(Bool.self, forKey: .launchAtLogin) ?? false
+        }
     }
 }
