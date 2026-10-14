@@ -15,10 +15,7 @@ targets:
       - path: LapinBrowser
         includes:
           - "**/*.swift"
-    resources:
-      - path: LapinBrowser/Resources
-        includes:
-          - Assets.xcassets
+      - path: LapinBrowser/Resources/Assets.xcassets
     settings:
       INFOPLIST_FILE: LapinBrowser/Info.plist
       CODE_SIGN_ENTITLEMENTS: LapinBrowser/LapinBrowser.entitlements
