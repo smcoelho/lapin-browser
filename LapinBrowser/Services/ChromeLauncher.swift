@@ -10,8 +10,8 @@ struct BrowserLauncher {
             ?? URL(fileURLWithPath: browser.fallbackAppPath)
     }
 
-    static func open(_ url: URL, in profile: BrowserProfile, browser: Browser) {
-        guard browser.supportsProfiles else {
+    static func open(_ url: URL, in profile: BrowserProfile?, browser: Browser) {
+        guard browser.supportsProfiles, let profile else {
             openWithoutProfile(url, browser: browser)
             return
         }
@@ -30,6 +30,7 @@ struct BrowserLauncher {
     }
 
     private static func openWithoutProfile(_ url: URL, browser: Browser) {
+        // Used for profileless browsers (Safari) and when no profile could be resolved.
         // Always use NSWorkspace so the browser receives the URL via its standard open
         // handler — this opens a new tab rather than a new window (e.g. Safari).
         // Process is not used here because --profile-directory is not needed and

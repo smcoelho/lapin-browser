@@ -10,41 +10,60 @@ struct URLRouter {
     @MainActor
     func route(_ url: URL) {
         let settings = AppSettings.shared
-        let matched = URLRouter.matchedRule(for: url, rules: settings.rules)
-        let profileID = matched?.profileID ?? settings.defaultProfileID
+        let target = URLRouter.resolveTarget(
+            for: url,
+            rules: settings.rules,
+            defaultProfileID: settings.defaultProfileID,
+            activeBrowserID: settings.activeBrowserID,
+            profiles: settings.availableProfiles
+        )
+        BrowserLauncher.open(url, in: target.profile, browser: target.browser)
+    }
 
-        guard !profileID.isEmpty else {
-            logger.warning("No default profile configured — skipping \(url.absoluteString)")
-            return
-        }
+    struct RouteTarget {
+        let browser: Browser
+        /// nil when no profile could be resolved — the URL still opens, in the browser's
+        /// own last-used profile, rather than being dropped.
+        let profile: BrowserProfile?
+    }
+
+    static func resolveTarget(
+        for url: URL,
+        rules: [URLRule],
+        defaultProfileID: String,
+        activeBrowserID: String,
+        profiles: [BrowserProfile]
+    ) -> RouteTarget {
+        let matched = matchedRule(for: url, rules: rules)
+        // A rule saved with no profile ("None") defers to the default profile.
+        let ruleProfileID = matched?.profileID ?? ""
+        let profileID = ruleProfileID.isEmpty ? defaultProfileID : ruleProfileID
 
         // Resolve browser: rule's browserID > global active browser
-        let browserID = matched?.browserID ?? settings.activeBrowserID
+        let browserID = matched?.browserID ?? activeBrowserID
         let browser = Browser.all.first { $0.id == browserID }
-            ?? Browser.all.first { $0.id == settings.activeBrowserID }
+            ?? Browser.all.first { $0.id == activeBrowserID }
             ?? .googleChrome
 
         // Resolve profile — scope to the pinned browser if the rule has one
         let profile: BrowserProfile?
         if let bid = matched?.browserID {
-            if let exact = settings.availableProfiles.first(where: { $0.id == profileID && $0.browserID == bid }) {
+            if let exact = profiles.first(where: { $0.id == profileID && $0.browserID == bid }) {
                 profile = exact
             } else {
-                profile = settings.availableProfiles.first { $0.browserID == bid }
+                profile = profiles.first { $0.browserID == bid }
                 if profile != nil {
                     logger.warning("Profile '\(profileID)' not found for browser '\(bid)' — falling back to first available profile")
                 }
             }
         } else {
-            profile = settings.availableProfiles.first { $0.id == profileID }
+            profile = profileID.isEmpty ? nil : profiles.first { $0.id == profileID }
         }
 
-        guard let profile else {
-            logger.warning("Profile '\(profileID)' not found for browser '\(browserID)' — skipping \(url.absoluteString)")
-            return
+        if profile == nil {
+            logger.warning("No profile resolved for '\(browser.id)' — opening \(url.absoluteString) without one")
         }
-
-        BrowserLauncher.open(url, in: profile, browser: browser)
+        return RouteTarget(browser: browser, profile: profile)
     }
 
     // Internal so URLRouterTests can exercise matching logic directly.
